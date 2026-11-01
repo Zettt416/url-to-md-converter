@@ -13,8 +13,11 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-// Serve static frontend assets
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static frontend assets from root and public
+app.use(express.static(__dirname));
+if (path.join(__dirname, 'public')) {
+  app.use(express.static(path.join(__dirname, 'public')));
+}
 
 // Convert from URL
 app.post('/api/convert', async (req, res) => {
@@ -53,7 +56,7 @@ app.post('/api/convert', async (req, res) => {
   }
 });
 
-// Convert from raw HTML string (useful for intranet / login-walled docs)
+// Convert from raw HTML string
 app.post('/api/convert-html', (req, res) => {
   const { html, baseUrl = '', mode = 'readability', selector = '', includeFrontmatter = true } = req.body || {};
 
@@ -94,7 +97,7 @@ app.get('/api/health', (req, res) => {
 
 // Fallback to index.html for any unmatched route
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Start server locally (skip if running in Vercel Serverless environment)
@@ -109,4 +112,3 @@ if (!process.env.VERCEL) {
 }
 
 export default app;
-

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DOCS_TO_MD — API Documentation to Markdown Engine</title>
+  <meta name="description" content="Local, high-speed converter for API documentation into clean, structured Markdown for LLMs and local archives.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="app-shell">
+  <!-- Top Navigation Bar -->
+  <header class="app-nav">
+    <div class="nav-left">
+      <div class="brand-monogram" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 7 4 4 20 4 20 7"></polyline>
+          <line x1="9" y1="20" x2="15" y2="20"></line>
+          <line x1="12" y1="4" x2="12" y2="20"></line>
+        </svg>
+      </div>
+      <div class="brand-info">
+        <span class="brand-name">DOCS_TO_MD</span>
+        <span class="brand-version">v1.2</span>
+      </div>
+    </div>
+
+    <!-- Quick Presets -->
+    <div class="nav-presets" aria-label="Sample API Documents">
+      <span class="presets-caption">Sample:</span>
+      <button type="button" class="preset-link" data-url="https://jsonplaceholder.typicode.com">JSONPlaceholder</button>
+      <button type="button" class="preset-link" data-url="https://docs.github.com/en/rest/quickstart">GitHub REST</button>
+      <button type="button" class="preset-link" data-url="https://openweathermap.org/api/one-call-4?collection=one_call_api">OpenWeather OneCall</button>
+    </div>
+
+    <!-- Mode Selector -->
+    <div class="nav-right">
+      <div class="mode-tabs" role="tablist">
+        <button id="mode-tab-url" class="mode-tab active" role="tab" aria-selected="true" type="button">
+          URL Source
+        </button>
+        <button id="mode-tab-html" class="mode-tab" role="tab" aria-selected="false" type="button">
+          Paste HTML
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="workbench-container">
+    <!-- Command Console -->
+    <section class="console-panel" aria-label="Target Configuration">
+      <!-- URL Mode View -->
+      <div id="url-console-view" class="console-view">
+        <div class="input-strip">
+          <div class="method-tag" aria-hidden="true">GET</div>
+          <div class="input-field-wrap">
+            <input 
+              type="url" 
+              id="url-input" 
+              class="console-input" 
+              placeholder="https://docs.github.com/en/rest/repos/repos" 
+              autocomplete="off" 
+              spellcheck="false"
+              required
+            />
+            <button id="paste-btn" class="input-action-btn" type="button" title="Paste clipboard text">
+              Paste
+            </button>
+          </div>
+          <button id="convert-btn" class="btn-execute" type="button">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="btn-label">Convert to MD</span>
+            <span class="shortcut-key">↵</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Raw HTML Mode View (Hidden by Default) -->
+      <div id="html-console-view" class="console-view hidden">
+        <div class="html-config-bar">
+          <label for="html-input" class="sub-label">Raw HTML Payload (Bypasses logins and firewalls)</label>
+          <input 
+            type="url" 
+            id="html-base-url" 
+            class="base-url-input" 
+            placeholder="Base URL for resolving relative links (e.g. https://api.internal.corp)" 
+          />
+        </div>
+        <textarea 
+          id="html-input" 
+          class="html-textarea" 
+          placeholder="Paste raw page HTML here..." 
+          rows="4" 
+          spellcheck="false"
+        ></textarea>
+        <div class="html-action-strip">
+          <button id="convert-html-btn" class="btn-execute" type="button">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="btn-label">Process HTML to MD</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Controls & Parameters Toolbar -->
+      <div class="controls-toolbar">
+        <div class="toolbar-left">
+          <label class="toggle-control" for="opt-frontmatter">
+            <input type="checkbox" id="opt-frontmatter" checked>
+            <span class="toggle-label">YAML Frontmatter</span>
+          </label>
+
+          <div class="select-control">
+            <label for="opt-mode" class="param-label">Parser Strategy:</label>
+            <select id="opt-mode" class="param-select">
+              <option value="readability" selected>Smart Reader (Readability)</option>
+              <option value="full">Full Page Body</option>
+              <option value="selector">Custom CSS Selector</option>
+            </select>
+          </div>
+
+          <div id="selector-wrapper" class="selector-control hidden">
+            <input 
+              type="text" 
+              id="opt-selector" 
+              class="selector-input" 
+              placeholder="e.g. article, main, #docs-content" 
+            />
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <button id="toggle-auth-btn" class="toolbar-btn" type="button" aria-expanded="false">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span>Request Headers</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Auth Headers Drawer -->
+      <div id="auth-headers-drawer" class="headers-drawer hidden">
+        <div class="drawer-header">
+          <span class="drawer-title">Custom HTTP Headers & Session Cookies</span>
+          <span class="drawer-hint">Format: <code>Header-Name: Value</code> (one per line)</span>
+        </div>
+        <textarea 
+          id="opt-headers" 
+          class="headers-textarea" 
+          rows="2" 
+          placeholder="Cookie: session_id=xyz987...&#10;Authorization: Bearer your_api_token"
+          spellcheck="false"
+        ></textarea>
+      </div>
+    </section>
+
+    <!-- Error Alert Box -->
+    <div id="error-banner" class="status-alert status-error hidden" role="alert">
+      <div class="alert-indicator" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <div class="alert-body">
+        <span class="alert-title">Conversion Failed</span>
+        <span id="error-message" class="alert-desc"></span>
+      </div>
+      <button id="close-error-btn" class="alert-dismiss" type="button" aria-label="Dismiss error">&times;</button>
+    </div>
+
+    <!-- Dual-Pane Output Workspace -->
+    <div id="workspace-dual" class="workbench-grid">
+      <!-- Left Pane: Visual Inspector / Rendered Document -->
+      <section class="pane-panel" aria-label="Rendered Document Inspector">
+        <div class="pane-header">
+          <div class="pane-title-group">
+            <span class="pane-label">DOCUMENT INSPECTOR</span>
+            <span id="doc-title-badge" class="pane-meta">Ready</span>
+          </div>
+          <div class="pane-actions">
+            <span id="stat-words-badge" class="meta-pill">0 words</span>
+          </div>
+        </div>
+
+        <div class="pane-scrollable">
+          <div id="preview-output" class="markdown-preview-content">
+            <!-- Initial State Spec -->
+            <div id="preview-placeholder" class="placeholder-workbench">
+              <div class="spec-card">
+                <div class="spec-header">
+                  <span class="spec-tag">SPECIFICATION</span>
+                  <span class="spec-title">API Documentation Extractor</span>
+                </div>
+                <p class="spec-desc">
+                  Converts public or authenticated REST/GraphQL API references into standardized, single-line GFM tables and clean code blocks ready for LLM processing or local markdown knowledge bases.
+                </p>
+                <div class="spec-matrix">
+                  <div class="matrix-row">
+                    <span class="matrix-key">GFM Tables</span>
+                    <span class="matrix-val">Normalizes parameter grids into strict single-line markdown</span>
+                  </div>
+                  <div class="matrix-row">
+                    <span class="matrix-key">React Streaming</span>
+                    <span class="matrix-val">Resolves Next.js / React Server Components Suspense boundaries</span>
+                  </div>
+                  <div class="matrix-row">
+                    <span class="matrix-key">Code Blocks</span>
+                    <span class="matrix-val">Preserves language specifiers (curl, json, python, bash, ts)</span>
+                  </div>
+                  <div class="matrix-row">
+                    <span class="matrix-key">URLs & Assets</span>
+                    <span class="matrix-val">Transforms relative paths to absolute canonical URLs</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Pane: Raw Markdown Output -->
+      <section class="pane-panel" aria-label="Raw Markdown Output">
+        <div class="pane-header">
+          <div class="pane-title-group">
+            <span class="pane-label">MARKDOWN ARTIFACT</span>
+            <span id="stat-size-badge" class="pane-meta">0 KB</span>
+          </div>
+          <div class="pane-actions">
+            <button id="copy-btn" class="action-btn" type="button" title="Copy to clipboard (Ctrl+Shift+C)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span id="copy-btn-text">Copy Raw</span>
+            </button>
+            <button id="download-btn" class="action-btn action-btn-accent" type="button" title="Save as .md file">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Download .md</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="pane-scrollable pane-editor-wrap">
+          <textarea 
+            id="raw-markdown-output" 
+            class="raw-markdown-editor" 
+            placeholder="Markdown output will appear here..." 
+            readonly 
+            spellcheck="false"
+          ></textarea>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Status Toast -->
+  <div id="toast" class="system-toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- Marked Parser -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

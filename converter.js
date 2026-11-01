@@ -1,4 +1,4 @@
-import { JSDOM } from 'jsdom';
+import { parseHTML } from 'linkedom';
 import { Readability } from '@mozilla/readability';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
@@ -135,8 +135,7 @@ export function convertHtmlToMarkdown(html, baseUrl, options = {}) {
     includeFrontmatter = true,
   } = options;
 
-  const dom = new JSDOM(html, { url: baseUrl || 'http://localhost' });
-  const { document } = dom.window;
+  const { document } = parseHTML(html);
 
   // Resolve relative links so exported docs are self-contained
   if (baseUrl) {
