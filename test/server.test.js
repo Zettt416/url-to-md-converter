@@ -62,8 +62,7 @@ test('GET / serves index.html', async () => {
   const res = await fetch(`${baseUrl}/`);
   assert.equal(res.status, 200);
   const text = await res.text();
-  assert.ok(text.includes('URL to MD'));
-  assert.ok(text.includes('Convert ke MD'));
+  assert.ok(text.includes('DOCS_TO_MD'));
 });
 
 test('GET /api/health returns ok', async () => {

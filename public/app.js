@@ -1,17 +1,20 @@
-// URL to Markdown Converter Client Logic
+// DOCS_TO_MD — Client Workbench Controller
 document.addEventListener('DOMContentLoaded', () => {
-  // Elements
+  // Navigation & Mode Toggles
+  const modeTabUrl = document.getElementById('mode-tab-url');
+  const modeTabHtml = document.getElementById('mode-tab-html');
+  const urlConsoleView = document.getElementById('url-console-view');
+  const htmlConsoleView = document.getElementById('html-console-view');
+
+  // Input Elements
   const urlInput = document.getElementById('url-input');
   const pasteBtn = document.getElementById('paste-btn');
   const convertBtn = document.getElementById('convert-btn');
-  const toggleInputModeBtn = document.getElementById('toggle-input-mode-btn');
-  const inputModeLabel = document.getElementById('input-mode-label');
-  const urlInputSection = document.getElementById('url-input-section');
-  const htmlInputSection = document.getElementById('html-input-section');
   const htmlInput = document.getElementById('html-input');
   const htmlBaseUrl = document.getElementById('html-base-url');
   const convertHtmlBtn = document.getElementById('convert-html-btn');
 
+  // Options & Headers
   const optFrontmatter = document.getElementById('opt-frontmatter');
   const optMode = document.getElementById('opt-mode');
   const selectorWrapper = document.getElementById('selector-wrapper');
@@ -20,34 +23,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const authHeadersDrawer = document.getElementById('auth-headers-drawer');
   const optHeaders = document.getElementById('opt-headers');
 
+  // Status & Error
   const errorBanner = document.getElementById('error-banner');
   const errorMessage = document.getElementById('error-message');
   const closeErrorBtn = document.getElementById('close-error-btn');
+  const toast = document.getElementById('toast');
 
-  const emptyState = document.getElementById('empty-state');
-  const resultSection = document.getElementById('result-section');
-  const resultTitle = document.getElementById('result-title');
-  const statWords = document.getElementById('stat-words');
-  const statChars = document.getElementById('stat-chars');
-  const statLines = document.getElementById('stat-lines');
-
-  const tabPreview = document.getElementById('tab-preview');
-  const tabRaw = document.getElementById('tab-raw');
-  const panePreview = document.getElementById('pane-preview');
-  const paneRaw = document.getElementById('pane-raw');
+  // Workbench Panes & Actions
   const previewOutput = document.getElementById('preview-output');
   const rawMarkdownOutput = document.getElementById('raw-markdown-output');
-
+  const docTitleBadge = document.getElementById('doc-title-badge');
+  const statWordsBadge = document.getElementById('stat-words-badge');
+  const statSizeBadge = document.getElementById('stat-size-badge');
   const copyBtn = document.getElementById('copy-btn');
   const copyBtnText = document.getElementById('copy-btn-text');
   const downloadBtn = document.getElementById('download-btn');
-  const toast = document.getElementById('toast');
 
   let currentMarkdown = '';
   let currentTitle = 'documentation';
-  let isRawHtmlMode = false;
 
-  // Initialize marked configuration if present
+  // Initialize marked configuration
   if (window.marked) {
     window.marked.setOptions({
       gfm: true,
@@ -55,8 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Helper: Show Toast
-  function showToast(message, duration = 3000) {
+  // Toast Helper
+  function showToast(message, duration = 2500) {
     toast.textContent = message;
     toast.classList.remove('hidden');
     setTimeout(() => {
@@ -64,29 +59,62 @@ document.addEventListener('DOMContentLoaded', () => {
     }, duration);
   }
 
-  // Helper: Show Error
+  // Error Banner Helpers
   function showError(msg) {
     errorMessage.textContent = msg;
     errorBanner.classList.remove('hidden');
     errorBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  // Helper: Clear Error
   function clearError() {
     errorBanner.classList.add('hidden');
   }
 
   closeErrorBtn.addEventListener('click', clearError);
 
-  // Toggle Auth / Custom Headers Drawer
+  // Mode Tabs Switcher
+  modeTabUrl.addEventListener('click', () => {
+    modeTabUrl.classList.add('active');
+    modeTabUrl.setAttribute('aria-selected', 'true');
+    modeTabHtml.classList.remove('active');
+    modeTabHtml.setAttribute('aria-selected', 'false');
+
+    urlConsoleView.classList.remove('hidden');
+    htmlConsoleView.classList.add('hidden');
+    urlInput.focus();
+  });
+
+  modeTabHtml.addEventListener('click', () => {
+    modeTabHtml.classList.add('active');
+    modeTabHtml.setAttribute('aria-selected', 'true');
+    modeTabUrl.classList.remove('active');
+    modeTabUrl.setAttribute('aria-selected', 'false');
+
+    htmlConsoleView.classList.remove('hidden');
+    urlConsoleView.classList.add('hidden');
+    htmlInput.focus();
+  });
+
+  // Toggle Mode (Readability vs Selector vs Full)
+  optMode.addEventListener('change', () => {
+    if (optMode.value === 'selector') {
+      selectorWrapper.classList.remove('hidden');
+      optSelector.focus();
+    } else {
+      selectorWrapper.classList.add('hidden');
+    }
+  });
+
+  // Toggle Auth Headers Drawer
   toggleAuthBtn.addEventListener('click', () => {
-    authHeadersDrawer.classList.toggle('hidden');
-    if (!authHeadersDrawer.classList.contains('hidden')) {
+    const isHidden = authHeadersDrawer.classList.toggle('hidden');
+    toggleAuthBtn.setAttribute('aria-expanded', String(!isHidden));
+    if (!isHidden) {
       optHeaders.focus();
     }
   });
 
-  // Helper: Parse Key-Value Headers from Textarea
+  // Helper: Parse Key-Value Headers
   function parseCustomHeaders(rawText) {
     const headers = {};
     if (!rawText || !rawText.trim()) return headers;
@@ -106,33 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return headers;
   }
 
-  // Toggle Mode (Readability vs Selector vs Full)
-  optMode.addEventListener('change', () => {
-    if (optMode.value === 'selector') {
-      selectorWrapper.classList.remove('hidden');
-      optSelector.focus();
-    } else {
-      selectorWrapper.classList.add('hidden');
-    }
-  });
-
-  // Toggle URL mode vs Raw HTML mode
-  toggleInputModeBtn.addEventListener('click', () => {
-    isRawHtmlMode = !isRawHtmlMode;
-    if (isRawHtmlMode) {
-      inputModeLabel.textContent = 'Mode: Paste HTML';
-      urlInputSection.classList.add('hidden');
-      htmlInputSection.classList.remove('hidden');
-      htmlInput.focus();
-    } else {
-      inputModeLabel.textContent = 'Mode: URL';
-      htmlInputSection.classList.add('hidden');
-      urlInputSection.classList.remove('hidden');
-      urlInput.focus();
-    }
-  });
-
-  // Paste button action
+  // Paste Action
   if (navigator.clipboard && navigator.clipboard.readText) {
     pasteBtn.addEventListener('click', async () => {
       try {
@@ -142,73 +144,55 @@ document.addEventListener('DOMContentLoaded', () => {
           urlInput.focus();
         }
       } catch {
-        showToast('Gagal mengakses clipboard. Silakan gunakan Ctrl+V manual.');
+        showToast('Clipboard access unavailable. Use manual paste.');
       }
     });
   } else {
     pasteBtn.classList.add('hidden');
   }
 
-  // Sample quick chips
-  document.querySelectorAll('.sample-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const sampleUrl = chip.getAttribute('data-url');
-      if (sampleUrl) {
-        urlInput.value = sampleUrl;
+  // Presets Quick Links
+  document.querySelectorAll('.preset-link').forEach(link => {
+    link.addEventListener('click', () => {
+      const target = link.getAttribute('data-url');
+      if (target) {
+        urlInput.value = target;
+        // Switch to URL mode if on HTML
+        if (!modeTabUrl.classList.contains('active')) {
+          modeTabUrl.click();
+        }
         triggerUrlConvert();
       }
     });
   });
 
-  // Tabs Switcher (Preview vs Raw)
-  tabPreview.addEventListener('click', () => {
-    tabPreview.classList.add('active');
-    tabPreview.setAttribute('aria-selected', 'true');
-    tabRaw.classList.remove('active');
-    tabRaw.setAttribute('aria-selected', 'false');
-
-    panePreview.classList.add('active');
-    paneRaw.classList.remove('active');
-  });
-
-  tabRaw.addEventListener('click', () => {
-    tabRaw.classList.add('active');
-    tabRaw.setAttribute('aria-selected', 'true');
-    tabPreview.classList.remove('active');
-    tabPreview.setAttribute('aria-selected', 'false');
-
-    paneRaw.classList.add('active');
-    panePreview.classList.remove('active');
-  });
-
-  // Render Result to UI
+  // Update Display
   function displayResult(data) {
     currentMarkdown = data.markdown || '';
     currentTitle = data.title || 'api-documentation';
 
-    resultTitle.textContent = currentTitle;
-    statWords.textContent = `${data.stats?.wordCount || 0} kata`;
-    statChars.textContent = `${data.stats?.charCount || 0} karakter`;
-    statLines.textContent = `${data.stats?.lineCount || 0} baris`;
+    // Format file size
+    const bytes = new Blob([currentMarkdown]).size;
+    const kb = (bytes / 1024).toFixed(1);
+
+    docTitleBadge.textContent = currentTitle;
+    statWordsBadge.textContent = `${data.stats?.wordCount || 0} words · ${data.stats?.lineCount || 0} lines`;
+    statSizeBadge.textContent = `${kb} KB`;
 
     rawMarkdownOutput.value = currentMarkdown;
 
     // Render Preview
     if (window.marked) {
       try {
-        // Strip frontmatter from preview so rendered document looks clean
-        const contentWithoutFrontmatter = currentMarkdown.replace(/^---[\s\S]*?---\n*/, '');
-        previewOutput.innerHTML = window.marked.parse(contentWithoutFrontmatter);
+        // Strip YAML frontmatter from visual document render
+        const docBody = currentMarkdown.replace(/^---[\s\S]*?---\n*/, '');
+        previewOutput.innerHTML = window.marked.parse(docBody);
       } catch {
         previewOutput.innerHTML = `<pre><code>${escapeHtml(currentMarkdown)}</code></pre>`;
       }
     } else {
       previewOutput.innerHTML = `<pre><code>${escapeHtml(currentMarkdown)}</code></pre>`;
     }
-
-    emptyState.classList.add('hidden');
-    resultSection.classList.remove('hidden');
-    resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   function escapeHtml(text) {
@@ -217,11 +201,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return div.innerHTML;
   }
 
-  // Trigger URL Convert
+  // Execute URL Conversion
   async function triggerUrlConvert() {
     const url = urlInput.value.trim();
     if (!url) {
-      showError('Silakan masukkan URL dokumentasi API terlebih dahulu.');
+      showError('Target URL is required.');
       urlInput.focus();
       return;
     }
@@ -231,8 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
     convertBtn.disabled = true;
 
     try {
-      const customHeaders = parseCustomHeaders(optHeaders ? optHeaders.value : '');
-
+      const customHeaders = parseCustomHeaders(optHeaders.value);
       const res = await fetch('/api/convert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -251,20 +234,20 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       displayResult(json.data);
-      showToast('Berhasil dikonversi ke Markdown!');
+      showToast('Document converted successfully');
     } catch (err) {
-      showError(`Gagal: ${err.message}`);
+      showError(`Error: ${err.message}`);
     } finally {
       convertBtn.classList.remove('is-loading');
       convertBtn.disabled = false;
     }
   }
 
-  // Trigger HTML Convert
+  // Execute Raw HTML Conversion
   async function triggerHtmlConvert() {
     const html = htmlInput.value.trim();
     if (!html) {
-      showError('Silakan tempel kode HTML terlebih dahulu.');
+      showError('Raw HTML content is required.');
       htmlInput.focus();
       return;
     }
@@ -292,9 +275,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       displayResult(json.data);
-      showToast('Berhasil dikonversi dari HTML!');
+      showToast('HTML converted successfully');
     } catch (err) {
-      showError(`Gagal: ${err.message}`);
+      showError(`Error: ${err.message}`);
     } finally {
       convertHtmlBtn.classList.remove('is-loading');
       convertHtmlBtn.disabled = false;
@@ -304,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
   convertBtn.addEventListener('click', triggerUrlConvert);
   convertHtmlBtn.addEventListener('click', triggerHtmlConvert);
 
-  // Keydown shortcuts
+  // Keyboard Shortcuts
   urlInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -313,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.addEventListener('keydown', (e) => {
-    // Ctrl+Shift+C to copy markdown
+    // Ctrl+Shift+C: Copy Markdown
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'c') {
       if (currentMarkdown) {
         e.preventDefault();
@@ -329,24 +312,23 @@ document.addEventListener('DOMContentLoaded', () => {
       await navigator.clipboard.writeText(currentMarkdown);
       const originalText = copyBtnText.textContent;
       copyBtnText.textContent = 'Copied!';
-      showToast('Markdown berhasil disalin ke clipboard!');
+      showToast('Markdown copied to clipboard');
       setTimeout(() => {
         copyBtnText.textContent = originalText;
-      }, 2000);
+      }, 1800);
     } catch {
       rawMarkdownOutput.select();
       document.execCommand('copy');
-      showToast('Disalin ke clipboard!');
+      showToast('Copied to clipboard');
     }
   }
 
   copyBtn.addEventListener('click', copyMarkdownToClipboard);
 
-  // Download .md File
+  // Download File
   downloadBtn.addEventListener('click', () => {
     if (!currentMarkdown) return;
 
-    // Generate safe filename
     const safeTitle = currentTitle
       .toLowerCase()
       .replace(/[^a-z0-9_-]+/g, '-')
@@ -363,7 +345,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    showToast(`File ${filename} berhasil diunduh!`);
+    showToast(`Downloaded ${filename}`);
   });
 });
-
