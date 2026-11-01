@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL to Markdown Converter | API Documentation to MD</title>
+  <meta name="description" content="Konversi halaman web dan dokumentasi API menjadi file Markdown bersih dan terstruktur untuk LLM, Obsidian, dan arsip offline.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-logo" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-wrap">
+            <h1 class="brand-title">URL to MD</h1>
+            <span class="badge badge-accent">Dev Tool</span>
+          </div>
+          <p class="brand-subtitle">Ekstrak & ubah dokumentasi API menjadi Markdown terstruktur</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="toggle-input-mode-btn" class="btn btn-ghost" type="button" title="Ganti antara mode URL atau Paste HTML">
+          <span id="input-mode-label">Mode: URL</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <!-- Input Panel -->
+      <section class="card input-card">
+        <!-- URL Input View -->
+        <div id="url-input-section" class="input-section">
+          <label for="url-input" class="form-label">
+            <span>Target URL Dokumentasi API</span>
+            <span class="label-hint">Mendukung Stripe, GitHub, MDN, Swagger, ReadMe, dll.</span>
+          </label>
+          <div class="url-bar">
+            <div class="url-input-wrapper">
+              <span class="url-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+              </span>
+              <input 
+                type="url" 
+                id="url-input" 
+                class="text-input" 
+                placeholder="https://docs.github.com/en/rest/repos/repos..." 
+                autocomplete="off" 
+                spellcheck="false"
+                required
+              />
+              <button id="paste-btn" class="btn-addon" type="button" title="Paste dari clipboard">
+                Paste
+              </button>
+            </div>
+            <button id="convert-btn" class="btn btn-primary" type="button">
+              <span class="btn-spinner" aria-hidden="true"></span>
+              <span class="btn-text">Convert ke MD</span>
+              <kbd class="kbd-shortcut">↵</kbd>
+            </button>
+          </div>
+
+          <!-- Quick Samples -->
+          <div class="samples-row">
+            <span class="samples-label">Coba sampel:</span>
+            <button type="button" class="sample-chip" data-url="https://jsonplaceholder.typicode.com">JSONPlaceholder</button>
+            <button type="button" class="sample-chip" data-url="https://httpbin.org">HTTPBin API</button>
+            <button type="button" class="sample-chip" data-url="https://docs.github.com/en/rest/quickstart">GitHub REST Quickstart</button>
+          </div>
+        </div>
+
+        <!-- Raw HTML Input View (Initially Hidden) -->
+        <div id="html-input-section" class="input-section hidden">
+          <div class="html-header-row">
+            <label for="html-input" class="form-label">
+              <span>Paste Kode HTML</span>
+              <span class="label-hint">Gunakan jika website dibatasi login/firewall</span>
+            </label>
+            <input 
+              type="url" 
+              id="html-base-url" 
+              class="text-input text-input-sm" 
+              placeholder="Base URL opsional (untuk resolve link relatif, cth: https://example.com)" 
+            />
+          </div>
+          <textarea 
+            id="html-input" 
+            class="text-input textarea-input" 
+            placeholder="Paste HTML halaman di sini (Ctrl+U -> Copy All)..." 
+            rows="6"
+            spellcheck="false"
+          ></textarea>
+          <div class="html-actions-row">
+            <button id="convert-html-btn" class="btn btn-primary" type="button">
+              <span class="btn-spinner" aria-hidden="true"></span>
+              <span class="btn-text">Convert HTML ke MD</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Options Accordion -->
+        <div class="options-bar">
+          <div class="option-item">
+            <label class="checkbox-label" for="opt-frontmatter">
+              <input type="checkbox" id="opt-frontmatter" checked>
+              <span>YAML Frontmatter</span>
+            </label>
+          </div>
+          
+          <div class="option-item">
+            <label for="opt-mode" class="select-label">Mode Ekstraksi:</label>
+            <select id="opt-mode" class="select-input">
+              <option value="readability" selected>Ekstraksi Cerdas (Readability)</option>
+              <option value="full">Seluruh Konten (Full Body)</option>
+              <option value="selector">CSS Selector Kustom</option>
+            </select>
+          </div>
+
+          <div id="selector-wrapper" class="option-item hidden">
+            <input 
+              type="text" 
+              id="opt-selector" 
+              class="text-input text-input-sm" 
+              placeholder="Contoh: article, #content, .markdown-body" 
+            />
+          </div>
+
+          <div class="option-item">
+            <button id="toggle-auth-btn" class="btn btn-ghost btn-sm" type="button">
+              🔐 Header / Cookie Auth
+            </button>
+          </div>
+        </div>
+
+        <!-- Auth / Custom Headers Drawer -->
+        <div id="auth-headers-drawer" class="auth-drawer hidden">
+          <div class="auth-drawer-header">
+            <span class="auth-drawer-title">Header Kustom / Cookie Otentikasi</span>
+            <span class="label-hint">Format per baris: <code>Header-Name: Value</code> (cth: <code>Cookie: session=...</code> atau <code>Authorization: Bearer token...</code>)</span>
+          </div>
+          <textarea 
+            id="opt-headers" 
+            class="text-input textarea-input auth-textarea" 
+            rows="3" 
+            placeholder="Cookie: session_id=abc123xyz...&#10;Authorization: Bearer your_token_here"
+            spellcheck="false"
+          ></textarea>
+        </div>
+      </section>
+
+      <!-- Error State -->
+      <div id="error-banner" class="alert alert-error hidden" role="alert">
+        <div class="alert-icon" aria-hidden="true">⚠️</div>
+        <div class="alert-content">
+          <strong id="error-title">Gagal Mengonversi</strong>
+          <p id="error-message"></p>
+        </div>
+        <button id="close-error-btn" class="alert-close" type="button" aria-label="Tutup pesan error">&times;</button>
+      </div>
+
+      <!-- Result Section -->
+      <section id="result-section" class="card result-card hidden">
+        <!-- Result Action Bar -->
+        <div class="result-header">
+          <div class="result-meta">
+            <h2 id="result-title" class="result-title">Untitled Document</h2>
+            <div class="result-tags">
+              <span id="stat-words" class="tag">0 kata</span>
+              <span id="stat-chars" class="tag">0 karakter</span>
+              <span id="stat-lines" class="tag">0 baris</span>
+            </div>
+          </div>
+          <div class="result-toolbar">
+            <div class="view-switch-group" role="tablist">
+              <button id="tab-preview" class="tab-btn active" role="tab" aria-selected="true" type="button">
+                Preview Render
+              </button>
+              <button id="tab-raw" class="tab-btn" role="tab" aria-selected="false" type="button">
+                Raw Markdown
+              </button>
+            </div>
+            <div class="action-buttons-group">
+              <button id="copy-btn" class="btn btn-secondary" type="button" title="Copy Markdown (Ctrl+Shift+C)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span id="copy-btn-text">Copy MD</span>
+              </button>
+              <button id="download-btn" class="btn btn-accent" type="button" title="Download file .md">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Download .md</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result Content Panes -->
+        <div class="result-content-container">
+          <!-- Rendered Preview Pane -->
+          <div id="pane-preview" class="result-pane active" role="tabpanel">
+            <div id="preview-output" class="markdown-body"></div>
+          </div>
+
+          <!-- Raw Markdown Code Pane -->
+          <div id="pane-raw" class="result-pane" role="tabpanel">
+            <textarea id="raw-markdown-output" class="raw-editor" readonly spellcheck="false"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- Initial Empty State -->
+      <section id="empty-state" class="empty-state card">
+        <div class="empty-icon" aria-hidden="true">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>
+        <h3 class="empty-title">Siap Mengonversi Dokumentasi</h3>
+        <p class="empty-desc">
+          Masukkan URL dokumentasi API di atas untuk mengekstrak konten intinya menjadi Markdown terstruktur.
+        </p>
+        <div class="feature-pills">
+          <div class="feature-pill">⚡ Pembersihan Otomatis (Nav/Footer Dibuang)</div>
+          <div class="feature-pill">📊 Format Tabel GFM Utuh</div>
+          <div class="feature-pill">💻 Fenced Code Blocks & Bahasa Kode</div>
+          <div class="feature-pill">🔗 Link Relatif Otomatis Jadi Absolut</div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  </div>
+
+  <!-- Marked JS for Rendered Markdown Preview -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+
