@@ -32,6 +32,18 @@ Aplikasi web modern, ringan, dan stabil untuk mengonversi halaman web serta doku
 3. Buka browser di:
    [http://localhost:3000](http://localhost:3000)
 
+## Deploy ke Vercel
+
+Proyek ini sudah dikonfigurasi penuh untuk Vercel Serverless Function & Edge CDN.
+
+Panduan lengkap langkah demi langkah tersedia di:  
+👉 **[DEPLOY_VERCEL.md](DEPLOY_VERCEL.md)**
+
+Secara singkat via Vercel Dashboard:
+1. Buka dashboard Vercel di [https://vercel.com/hardcorez/~/deployments](https://vercel.com/hardcorez/~/deployments).
+2. Klik **Add New...** -> **Project**, lalu import repository `Zettt416/url-to-md-converter`.
+3. Klik **Deploy** (tanpa perlu setting tambahan).
+
 ## Menjalankan Pengujian (Testing)
 
 Proyek ini dilengkapi dengan unit test dan integration test menggunakan native test runner Node.js (`node:test`):

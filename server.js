@@ -97,12 +97,16 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start server
-const HOST = '0.0.0.0';
-app.listen(PORT, HOST, () => {
-  console.log(`\n🚀 URL to Markdown Converter berjalan di:`);
-  console.log(`   - Local:   http://localhost:${PORT}`);
-  console.log(`   - IPv4:    http://127.0.0.1:${PORT}`);
-  console.log(`Tekan Ctrl+C untuk menghentikan server.\n`);
-});
+// Start server locally (skip if running in Vercel Serverless environment)
+if (!process.env.VERCEL) {
+  const HOST = '0.0.0.0';
+  app.listen(PORT, HOST, () => {
+    console.log(`\n🚀 URL to Markdown Converter berjalan di:`);
+    console.log(`   - Local:   http://localhost:${PORT}`);
+    console.log(`   - IPv4:    http://127.0.0.1:${PORT}`);
+    console.log(`Tekan Ctrl+C untuk menghentikan server.\n`);
+  });
+}
+
+export default app;
 
