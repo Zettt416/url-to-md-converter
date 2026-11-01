@@ -4,8 +4,6 @@
 
 🌐 **Production URLs**:
 - [https://url-to-md-converter-hardcorez.vercel.app/](https://url-to-md-converter-hardcorez.vercel.app/)
-- [https://url-to-md-converter.vercel.app/](https://url-to-md-converter.vercel.app/)  
-📦 **Repository**: [https://github.com/Zettt416/url-to-md-converter](https://github.com/Zettt416/url-to-md-converter)
 
 ---
 
