@@ -37,7 +37,7 @@
 ### Live Production
 
 The application is deployed on Vercel's global Edge CDN with native serverless endpoints:
-👉 **[https://url-to-md-converter.vercel.app/](https://url-to-md-converter.vercel.app/)**
+👉 **[https://url-to-md-converter.vercel.app/]([https://url-to-md-converter.vercel.app](https://url-to-md-converter-hardcorez.vercel.app/)**
 
 ### API Endpoints
 
@@ -105,7 +105,7 @@ npm test
 ### Tautan Production
 
 Aplikasi sudah live dan berjalan di jaringan global Vercel Edge CDN:  
-👉 **[https://url-to-md-converter.vercel.app/](https://url-to-md-converter.vercel.app/)**
+👉 **[https://url-to-md-converter.vercel.app/]([https://url-to-md-converter.vercel.app/](https://url-to-md-converter-hardcorez.vercel.app/)**
 
 ### Endpoint API
 
